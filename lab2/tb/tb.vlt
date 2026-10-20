@@ -1,0 +1,9 @@
+`verilator_config
+
+// Testbenches are not synthesizable hardware: blocking assignments in an
+// always block (the clock generator) and unused signals are normal there.
+// The RTL in rtl/ is still held to the strict rules.
+lint_off -rule BLKSEQ        -file "*tb/tb_*.sv"
+lint_off -rule UNUSEDSIGNAL  -file "*tb/tb_*.sv"
+lint_off -rule WIDTHEXPAND   -file "*tb/tb_*.sv"
+lint_off -rule WIDTHTRUNC    -file "*tb/tb_*.sv"
