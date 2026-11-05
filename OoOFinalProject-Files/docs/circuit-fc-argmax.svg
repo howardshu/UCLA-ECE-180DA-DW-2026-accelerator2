@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1560 960" width="1560" height="960" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20,0 H0 V20" fill="none" stroke="#ececec" stroke-width="1"/></pattern>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+    <symbol id="cloud" viewBox="0 0 100 70" preserveAspectRatio="none"><path d="M24,62 C9,62 3,50 12,41 C3,31 13,15 28,21 C31,7 54,3 61,15 C70,4 92,10 88,27 C100,32 98,55 83,56 C82,68 62,71 53,63 C45,71 27,70 24,62 Z" fill="#ffffff" stroke="#333" stroke-width="1.6" vector-effect="non-scaling-stroke"/></symbol>
+    <style>
+      .mod  { fill:#fff2cc; stroke:#d6b656; stroke-width:2 }
+      .reg  { fill:#dae8fc; stroke:#6c8ebf; stroke-width:2 }
+      .clk  { fill:none; stroke:#6c8ebf; stroke-width:1.6 }
+      .w    { stroke:#222; stroke-width:1.8; fill:none }
+      .n    { fill:#222; text-anchor:middle; font-size:16px }
+      .p    { fill:#222; font-size:15px }
+      .ann  { fill:#444; font-style:italic; font-size:14px }
+    </style>
+  </defs>
+
+  <rect width="1560" height="960" fill="#ffffff"/>
+  <rect width="1560" height="960" fill="url(#grid)"/>
+
+  <text x="40" y="56" style="font-size:30px" font-weight="700" fill="#222">FC + argmax · circuit level</text>
+  <text x="40" y="88" style="font-size:17px" fill="#555">Proposed design for rtl/acc_fc.sv (still a stub)</text>
+
+  <use href="#cloud" xlink:href="#cloud" x="1150" y="28" width="62" height="42"/>
+  <text x="1222" y="55" class="p">combinational</text>
+  <rect class="reg" x="1350" y="32" width="54" height="34"/>
+  <path class="clk" d="M1356,66 l7,-9 l7,9"/>
+  <text x="1414" y="55" class="p">register</text>
+
+  <rect class="mod" x="260" y="140" width="1120" height="770"/>
+  <text x="820" y="172" class="n" style="font-size:20px" font-weight="700">acc_fc</text>
+
+  <!-- counters and addresses -->
+  <path class="w" d="M110,260 H333" marker-end="url(#a)"/>
+  <text x="110" y="252" class="p">start_i</text>
+  <use href="#cloud" xlink:href="#cloud" x="330" y="200" width="180" height="120"/>
+  <text x="420" y="265" class="n">Counter logic</text>
+  <path class="w" d="M510,260 H590" marker-end="url(#a)"/>
+  <rect class="reg" x="590" y="225" width="160" height="70"/>
+  <path class="clk" d="M596,295 l8,-10 l8,10"/>
+  <text x="670" y="265" class="n">o_q, i_q</text>
+  <path class="w" d="M630,295 V350 H420 V318" marker-end="url(#a)"/>
+
+  <path class="w" d="M750,260 H830" marker-end="url(#a)"/>
+  <use href="#cloud" xlink:href="#cloud" x="830" y="200" width="200" height="120"/>
+  <text x="930" y="265" class="n">Address logic</text>
+  <path class="w" d="M1030,260 H1500" marker-end="url(#a)"/>
+  <text x="1400" y="232" class="p">src_addr_o</text>
+  <text x="1400" y="252" class="p">wgt_addr_o</text>
+
+  <!-- MAC -->
+  <path class="w" d="M710,295 V420" marker-end="url(#a)"/>
+  <text x="722" y="362" class="ann">1-cycle delay</text>
+  <rect class="reg" x="590" y="420" width="160" height="70"/>
+  <path class="clk" d="M596,490 l8,-10 l8,10"/>
+  <text x="670" y="460" class="n">o_d1, last_d1</text>
+
+  <path class="w" d="M750,455 H830" marker-end="url(#a)"/>
+  <use href="#cloud" xlink:href="#cloud" x="830" y="395" width="200" height="125"/>
+  <text x="930" y="461" class="n">MAC logic</text>
+  <path class="w" d="M110,580 H900 V516" marker-end="url(#a)"/>
+  <text x="110" y="552" class="p">src_rdata_i (p2)</text>
+  <text x="110" y="572" class="p">wgt_rdata_i</text>
+  <path class="w" d="M110,630 H970 V514" marker-end="url(#a)"/>
+  <text x="110" y="622" class="p">cfg_bias_i</text>
+
+  <path class="w" d="M1030,455 H1110" marker-end="url(#a)"/>
+  <rect class="reg" x="1110" y="420" width="160" height="70"/>
+  <path class="clk" d="M1116,490 l8,-10 l8,10"/>
+  <text x="1190" y="460" class="n">acc_q</text>
+  <path class="w" d="M1230,420 V370 H930 V398" marker-end="url(#a)"/>
+
+  <!-- argmax and RES write -->
+  <path class="w" d="M1190,490 V700" marker-end="url(#a)"/>
+  <path class="w" d="M1190,670 H670 V702" marker-end="url(#a)"/>
+  <circle cx="1190" cy="670" r="4" fill="#222"/>
+  <text x="1202" y="600" class="ann">logit</text>
+
+  <use href="#cloud" xlink:href="#cloud" x="580" y="695" width="180" height="120"/>
+  <text x="670" y="760" class="n">Compare</text>
+  <path class="w" d="M760,755 H830" marker-end="url(#a)"/>
+  <text x="910" y="712" class="ann" text-anchor="middle">only if last_d1</text>
+  <rect class="reg" x="830" y="720" width="160" height="70"/>
+  <path class="clk" d="M836,790 l8,-10 l8,10"/>
+  <text x="910" y="760" class="n">max_q, idx_q</text>
+  <path class="w" d="M870,790 V850 H670 V813" marker-end="url(#a)"/>
+
+  <path class="w" d="M990,755 H1095" marker-end="url(#a)"/>
+  <use href="#cloud" xlink:href="#cloud" x="1095" y="695" width="190" height="120"/>
+  <text x="1190" y="760" class="n">RES write</text>
+  <path class="w" d="M1285,755 H1500" marker-end="url(#a)"/>
+  <text x="1400" y="707" class="p">res_we_o</text>
+  <text x="1400" y="727" class="p">res_addr_o</text>
+  <text x="1400" y="747" class="p">res_wdata_o</text>
+
+  <path class="w" d="M1230,812 V840" marker-end="url(#a)"/>
+  <rect class="reg" x="1180" y="840" width="110" height="50"/>
+  <path class="clk" d="M1186,890 l7,-9 l7,9"/>
+  <text x="1235" y="871" class="n">done_q</text>
+  <path class="w" d="M1290,865 H1500" marker-end="url(#a)"/>
+  <text x="1400" y="857" class="p">done_o</text>
+</svg>
