@@ -18,7 +18,7 @@
   <rect width="1520" height="820" fill="url(#grid)"/>
 
   <text x="40" y="56" style="font-size:30px" font-weight="700" fill="#222">Weight registers · circuit level</text>
-  <text x="40" y="88" style="font-size:17px" fill="#555">Proposed design inside rtl/acc_conv.sv (the conv engine is still a stub)</text>
+  <text x="40" y="88" style="font-size:17px" fill="#555">Weight banks inside rtl/acc_conv.sv: preloaded in the LOAD state, read by the PEs in the RUN state</text>
 
   <use href="#cloud" xlink:href="#cloud" x="1110" y="28" width="62" height="42"/>
   <text x="1182" y="55" class="p">combinational</text>
@@ -27,20 +27,20 @@
   <text x="1374" y="55" class="p">register</text>
 
   <rect class="mod" x="260" y="140" width="1080" height="640"/>
-  <text x="800" y="172" class="n" style="font-size:20px" font-weight="700">acc_conv · weight register file</text>
+  <text x="800" y="172" class="n" style="font-size:20px" font-weight="700">acc_conv · weight banks</text>
 
-  <!-- preload: counter and address -->
+  <!-- LOAD: request counter and address -->
   <path class="w" d="M110,200 H930 V232" marker-end="url(#a)"/>
   <text x="110" y="192" class="p">cfg_wgt_base_i</text>
   <path class="w" d="M110,285 H333" marker-end="url(#a)"/>
   <text x="110" y="277" class="p">start_i</text>
 
   <use href="#cloud" xlink:href="#cloud" x="330" y="225" width="180" height="120"/>
-  <text x="420" y="290" class="n">Preload logic</text>
+  <text x="420" y="290" class="n">Load logic</text>
   <path class="w" d="M510,285 H590" marker-end="url(#a)"/>
   <rect class="reg" x="590" y="250" width="160" height="70"/>
   <path class="clk" d="M596,320 l8,-10 l8,10"/>
-  <text x="670" y="290" class="n">ld_idx_q</text>
+  <text x="670" y="290" class="n">load_req</text>
   <path class="w" d="M630,320 V380 H420 V343" marker-end="url(#a)"/>
 
   <path class="w" d="M750,285 H830" marker-end="url(#a)"/>
@@ -49,37 +49,39 @@
   <path class="w" d="M1030,285 H1480" marker-end="url(#a)"/>
   <text x="1360" y="277" class="p">wgt_addr_o</text>
 
-  <!-- write path -->
-  <path class="w" d="M710,320 V440" marker-end="url(#a)"/>
-  <text x="722" y="395" class="ann">1-cycle delay</text>
-  <rect class="reg" x="590" y="440" width="160" height="70"/>
-  <path class="clk" d="M596,510 l8,-10 l8,10"/>
-  <text x="670" y="480" class="n">ld_idx_d1</text>
+  <!-- LOAD: write the returned byte into its bank -->
+  <path class="w" d="M710,320 V430" marker-end="url(#a)"/>
+  <text x="722" y="390" class="ann">1-cycle delay</text>
+  <rect class="reg" x="575" y="430" width="190" height="80"/>
+  <path class="clk" d="M581,510 l8,-10 l8,10"/>
+  <text x="670" y="463" class="n">load_pending</text>
+  <text x="670" y="485" class="n">load_channel, load_tap</text>
 
-  <path class="w" d="M590,475 H110" marker-end="url(#a)"/>
-  <text x="114" y="467" class="p">preload_done</text>
+  <path class="w" d="M575,470 H110" marker-end="url(#a)"/>
+  <text x="114" y="462" class="p">last weight → RUN</text>
 
-  <path class="w" d="M750,475 H830" marker-end="url(#a)"/>
-  <use href="#cloud" xlink:href="#cloud" x="830" y="410" width="200" height="130"/>
-  <text x="930" y="480" class="n">Write logic</text>
-  <path class="w" d="M110,590 H930 V537" marker-end="url(#a)"/>
+  <path class="w" d="M765,470 H835" marker-end="url(#a)"/>
+  <use href="#cloud" xlink:href="#cloud" x="830" y="405" width="200" height="135"/>
+  <text x="930" y="475" class="n">Write logic</text>
+  <path class="w" d="M880,532 V560 H670 V513" marker-end="url(#a)"/>
+  <path class="w" d="M110,590 H980 V538" marker-end="url(#a)"/>
   <text x="110" y="582" class="p">wgt_rdata_i</text>
 
-  <path class="w" d="M1030,475 H1110" marker-end="url(#a)"/>
-  <text x="1205" y="428" class="ann" text-anchor="middle">only if ld_valid_d1</text>
-  <rect class="reg" x="1110" y="440" width="190" height="70"/>
-  <path class="clk" d="M1116,510 l8,-10 l8,10"/>
-  <text x="1205" y="480" class="n">w_q[0..224]</text>
+  <path class="w" d="M1030,470 H1110" marker-end="url(#a)"/>
+  <text x="1205" y="423" class="ann" text-anchor="middle">only if load_pending</text>
+  <rect class="reg" x="1110" y="435" width="190" height="70"/>
+  <path class="clk" d="M1116,505 l8,-10 l8,10"/>
+  <text x="1205" y="475" class="n">weight_bank[3][75]</text>
 
-  <!-- read path -->
-  <path class="w" d="M1205,510 V610" marker-end="url(#a)"/>
-  <text x="1217" y="565" class="ann">implicit reading</text>
+  <!-- RUN: every PE reads its own bank at the same tap -->
+  <path class="w" d="M1205,505 V610" marker-end="url(#a)"/>
+  <text x="1217" y="562" class="ann">implicit reading</text>
   <path class="w" d="M110,675 H1112" marker-end="url(#a)"/>
-  <text x="110" y="667" class="p">k_rd (from MAC sequencer)</text>
+  <text x="110" y="667" class="p">return_tap (RUN tap counter)</text>
   <use href="#cloud" xlink:href="#cloud" x="1105" y="610" width="200" height="130"/>
   <text x="1205" y="671" class="n">Combinational</text>
   <text x="1205" y="691" class="n">read</text>
   <path class="w" d="M1305,675 H1480" marker-end="url(#a)"/>
-  <text x="1360" y="647" class="p">w0, w1, w2</text>
+  <text x="1360" y="647" class="p">wgt_i</text>
   <text x="1360" y="667" class="p">→ PE 0, 1, 2</text>
 </svg>
