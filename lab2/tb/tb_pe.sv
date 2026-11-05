@@ -129,6 +129,7 @@ module tb_pe;
   // One worked example is written out for you. Then it is your turn.
   // --------------------------------------------------------------------------
   initial begin
+    logic signed [DATA_W-1:0] saved_sum;
     $display("=== tb_pe ===");
 
     do_reset();
@@ -173,7 +174,13 @@ module tb_pe;
     //   3. check("test2 sum",  sum_o,  -23);
     //   4. check("test2 relu", relu_o,   0);
     // ========================================================================
+    do_clear();
 
+    send(8'sd2, -8'sd4);
+    send(8'sd3, -8'sd5);
+
+    check("test2 sum",  sum_o,  -23);
+    check("test2 relu", relu_o,   0);
 
 
     // ========================================================================
@@ -192,8 +199,19 @@ module tb_pe;
     //   5. run a different dot product and confirm the new answer is right
     //      and has no contamination from step 2
     // ========================================================================
+    do_clear();
 
+    send(8'sd2, -8'sd4);
+    send(8'sd2, -8'sd4);
 
+    do_clear();
+
+    check("test2 sum",  sum_o,  0);
+
+    send(8'sd2, -8'sd7);
+    send(8'sd8, 8'sd5);
+
+    check("test2 sum",  sum_o,  26);
 
     // ========================================================================
     // TEST 4 -- YOUR TURN (if you have time): does valid_i gate correctly?
@@ -210,7 +228,26 @@ module tb_pe;
     //   3. check sum_o is UNCHANGED -- the junk must not have accumulated
     // ========================================================================
 
+    do_clear();
 
+    @(negedge clk_i);
+    valid_i = 1'b1;
+    act_i   = 3;
+    wgt_i   = 4;  // junk on the bus
+
+    @(negedge clk_i);  // One rising edge has accepted the pair.
+    valid_i = 1'b0;
+    saved_sum = sum_o;
+
+    // Leave junk on the inputs while valid is low.
+    act_i = 99;
+    wgt_i = 99;
+
+    repeat (3) begin
+      @(negedge clk_i);  // Check after each intervening rising edge.
+      if (sum_o !== saved_sum)
+        $fatal(1, "TEST 4 FAIL: sum changed while valid_i was low");
+    end
 
     // ------------------------------------------------------------------------
     // Verdict. Always print one. A testbench that scrolls past without a

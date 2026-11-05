@@ -131,7 +131,15 @@ module pe_top #(
   //     - No `always_ff` in this file. If you typed `posedge`, stop and
   //       re-read the block diagram: this is a cloud, not a box.
   // --------------------------------------------------------------------------
+    logic signed [ACC_W-1:0] acc_q = 0; 
+    logic signed [ACC_W-1:0] acc_d = 0; 
 
+    mac_unit mac(
+        .act_i(act_i),
+        .wgt_i(wgt_i),
+        .acc_i(acc_q),
+        .result_o(acc_d)
+    );
   // --------------------------------------------------------------------------
   // MODULE 2 of 3:  rtl/accumulator.sv
   //
@@ -162,6 +170,14 @@ module pe_top #(
   //     - q_o is the register's output, so `assign q_o = q;` at the end
   //       (or declare q_o as the register directly -- your choice).
   // --------------------------------------------------------------------------
+    accumulator accum(
+        .clk_i(clk_i),
+        .rst_ni(rst_ni),
+        .clear_i(clear_i),
+        .en_i(valid_i),
+        .d_i(acc_d),
+        .q_o(acc_q)
+    );
 
   // --------------------------------------------------------------------------
   // MODULE 3 of 3:  rtl/relu_unit.sv
@@ -185,7 +201,12 @@ module pe_top #(
   //       a wire.
   //     - You could also test the sign bit x_i[ACC_W-1] directly. Same gate.
   // --------------------------------------------------------------------------
+    assign sum_o = acc_q;
 
+    relu_unit relu(
+        .x_i(acc_q),
+        .y_o(relu_o)
+    );
 
   // ==========================================================================
   // STEP 2 -- Wire them together here.
