@@ -1,37 +1,7 @@
-// Convolution engine, shared by conv1 and conv2.  *** STUB: TODO ***
-//
-// Computes, for every output (h, w) and output channel o (K = 5, OC = 3):
-//
-//   acc       = bias[o] + sum_{r,s,c} x[((h+r)*IN_HW + (w+s))*IN_C + c]
-//                                    * wgt[wgt_base + ((o*5 + r)*5 + s)*IN_C + c]
-//   y[(h*OUT_HW + w)*3 + o] = requant(acc, shift)     (acc_internal_pkg)
-//
-//   conv1: IN_HW = 28, IN_C = 1, src = IMG at img_base, wgt_base = 0x000
-//   conv2: IN_HW = 12, IN_C = 3, src = ACT_B at 0,      wgt_base = 0x080
-//   OUT_HW = IN_HW - 4; the destination is always ACT_A.
-//
-// Activations are uint8 (act_t), weights int8 (wgt_t): sign-extend the
-// weight and zero-extend the activation before multiplying.
-//
-// Proposed microarchitecture (see docs/cdr-plan.md):
-//   1. Preload the layer's 25*IN_C*3 weights from WGT into a local register
-//      file (75 or 225 bytes), one byte per cycle. WGT has one read port,
-//      but each PE needs a different weight every cycle.
-//   2. NUM_PE = 3 PEs, one per output channel. Each cycle, read one input
-//      byte and broadcast it to all three PEs; PE o multiplies it by its own
-//      weight for the same (r, s, c) and accumulates.
-//   3. After 25*IN_C products, requantize the 3 accumulators and write the 3
-//      output bytes (3 cycles on the single ACT_A write port, or overlap the
-//      writes with the next pixel's accumulation).
-//
-// Port timing: every read port has one cycle of latency. The address you
-// drive in cycle t returns data in cycle t+1 -- pipeline a valid bit and the
-// (r, s, c) indices alongside the address so the MAC uses matching operands.
-//
-// Handshake: start_i is a one-cycle pulse; configuration is stable from start
-// until done. Pulse done_o for one cycle after the last output byte is
-// written. Reset may arrive mid-layer.
-
+// Three output-channel PEs with a broadcast activation and local weight banks.
+// Config is stable until done. Read responses have exactly one cycle latency.
+// Weights are preloaded once per layer. Compute accepts one input per cycle;
+// the three completed output channels are serialized onto the byte write port.
 module acc_conv
     import accelerator_cnn_pkg::*;
     import acc_internal_pkg::*;
@@ -64,23 +34,106 @@ module acc_conv
     output act_t                   dst_wdata_o
 );
 
-    // TODO: replace this stub. It finishes immediately and writes nothing.
-    always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (!rst_ni) done_o <= 1'b0;
-        else         done_o <= start_i;
+    typedef enum logic [2:0] {IDLE, LOAD, RUN, WRITE, FINISH} state_t;
+    state_t state;
+    wgt_t weight_bank [NUM_PE][75]; // 25 taps/channel * at most 3 input channels
+    act_t pe_result [NUM_PE];
+    int unsigned taps, total_weights, out_hw;
+    int unsigned load_req, load_slot, load_channel, load_tap;
+    logic load_pending;
+    int unsigned h, w, r, s, c, issue_tap, return_tap, write_channel;
+    logic operand_pending, issued_all;
+
+    assign taps = 25 * int'(cfg_in_c_i);
+    assign total_weights = NUM_PE * taps;
+    assign out_hw = int'(cfg_in_hw_i) - 4;
+    assign wgt_addr_o = WGT_ADDR_W'(int'(cfg_wgt_base_i) +
+                                  (load_req < total_weights ? load_req : 0));
+    assign src_addr_o = BYTE_ADDR_W'(int'(cfg_src_base_i) +
+        (((h+r)*int'(cfg_in_hw_i) + w+s)*int'(cfg_in_c_i) + c));
+    assign dst_we_o = rst_ni && state == WRITE;
+    assign dst_addr_o = BYTE_ADDR_W'((h*out_hw+w)*NUM_PE + write_channel);
+    assign dst_wdata_o = pe_result[write_channel];
+    assign done_o = state == FINISH;
+
+    for (genvar o=0; o<NUM_PE; o++) begin : g_pe
+        pe_top u_pe (
+            .clk_i(clk_i), .rst_ni(rst_ni), .clear_i(1'b0),
+            .valid_i(state == RUN && operand_pending),
+            .first_mac_i(return_tap == 0), .act_i(src_rdata_i),
+            .wgt_i(weight_bank[o][return_tap]), .bias_i(cfg_bias_i[o]),
+            .shift_i(cfg_shift_i), .sum_o(), .requant_o(pe_result[o])
+        );
     end
 
-    assign src_addr_o  = '0;
-    assign wgt_addr_o  = '0;
-    assign dst_we_o    = 1'b0;
-    assign dst_addr_o  = '0;
-    assign dst_wdata_o = '0;
-
-    // verilator lint_off UNUSEDSIGNAL
-    logic unused;
-    assign unused = ^{cfg_in_hw_i, cfg_in_c_i, cfg_src_base_i, cfg_wgt_base_i,
-                      cfg_shift_i, cfg_bias_i[0], cfg_bias_i[1], cfg_bias_i[2],
-                      src_rdata_i, wgt_rdata_i};
-    // verilator lint_on UNUSEDSIGNAL
-
+    // Issue address/counters and remember the tap for the following response.
+    // The final response updates all PEs before WRITE exposes their results.
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+            state <= IDLE;
+            load_req <= 0; load_slot <= 0; load_pending <= 0;
+            load_channel <= 0; load_tap <= 0;
+            h <= 0; w <= 0; r <= 0; s <= 0; c <= 0;
+            issue_tap <= 0; return_tap <= 0; write_channel <= 0;
+            operand_pending <= 0; issued_all <= 0;
+        end else begin
+            case (state)
+                IDLE: if (start_i) begin
+                    load_req <= 0; load_slot <= 0; load_pending <= 0;
+                    load_channel <= 0; load_tap <= 0;
+                    h <= 0; w <= 0; r <= 0; s <= 0; c <= 0;
+                    issue_tap <= 0; return_tap <= 0; write_channel <= 0;
+                    operand_pending <= 0; issued_all <= 0;
+                    state <= LOAD;
+                end
+                LOAD: begin
+                    load_pending <= load_req < total_weights;
+                    if (load_req < total_weights) begin
+                        load_slot <= load_req;
+                        load_req <= load_req + 1;
+                    end
+                    if (load_pending) begin
+                        weight_bank[load_channel][load_tap] <= wgt_rdata_i;
+                        if (load_tap == taps-1) begin
+                            load_tap <= 0; load_channel <= load_channel+1;
+                        end else load_tap <= load_tap+1;
+                        if (load_slot == total_weights-1) state <= RUN;
+                    end
+                end
+                RUN: begin
+                    operand_pending <= !issued_all;
+                    if (!issued_all) begin
+                        return_tap <= issue_tap;
+                        if (issue_tap == taps-1) issued_all <= 1;
+                        else begin
+                            issue_tap <= issue_tap + 1;
+                            if (c == int'(cfg_in_c_i)-1) begin
+                                c <= 0;
+                                if (s == 4) begin s <= 0; r <= r + 1; end
+                                else s <= s + 1;
+                            end else c <= c + 1;
+                        end
+                    end
+                    if (operand_pending && return_tap == taps-1) begin
+                        write_channel <= 0;
+                        state <= WRITE;
+                    end
+                end
+                WRITE: begin
+                    if (write_channel == NUM_PE-1) begin
+                        if (h == out_hw-1 && w == out_hw-1) state <= FINISH;
+                        else begin
+                            if (w == out_hw-1) begin w <= 0; h <= h+1; end
+                            else w <= w+1;
+                            r <= 0; s <= 0; c <= 0; issue_tap <= 0;
+                            return_tap <= 0; operand_pending <= 0; issued_all <= 0;
+                            state <= RUN;
+                        end
+                    end else write_channel <= write_channel + 1;
+                end
+                FINISH: state <= IDLE;
+                default: state <= IDLE;
+            endcase
+        end
+    end
 endmodule

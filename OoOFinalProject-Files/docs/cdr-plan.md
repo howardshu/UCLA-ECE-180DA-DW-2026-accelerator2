@@ -77,12 +77,12 @@ Key decisions:
 | `rtl/accelerator_top.sv` | Done: ports, memories, port muxing, latency normalization, debug port. |
 | `rtl/acc_controller.sv` | Done: handshake, config/PARAM checks, PARAM preload, sequencing, MAGIC. |
 | `rtl/acc_ram.sv` | Done. |
-| `rtl/acc_conv.sv` | **Stub.** Header gives the exact formulas and proposed schedule. |
-| `rtl/acc_pool.sv` | **Stub.** |
+| `rtl/acc_conv.sv` | Implemented: three PEs, per-layer weight preload, pipelined input reads, serialized output writes. |
+| `rtl/acc_pool.sv` | Implemented: unsigned 2x2 stride-2 max pooling. |
 | `rtl/acc_fc.sv` | **Stub.** |
 | `tb/tb_team.sv` | Done: all vectors, layer checks, handshake, repeat, bad length/offset, mid-job reset, both memory modes. |
 
-With the stub engines, `make sim` passes the handshake, bad-length and bad-offset checks and fails the result checks (expected). The mid-job reset test only becomes meaningful once the engines take longer than 500 cycles.
+Use `make sim BRINGUP=4` and `make sim-sync BRINGUP=4` to check all four convolution/pooling stages at their writes, plus controller behavior. FC is still a stub, so full result checks (`BRINGUP=0`) are expected to fail. The datapath uses separate convolution and pooling passes; they are not fused.
 
 ## 5. Open questions (post on Campuswire)
 
