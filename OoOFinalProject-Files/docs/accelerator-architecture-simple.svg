@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 800" width="1640" height="800" font-family="'Source Serif 4','Source Serif Pro',Georgia,serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+    <marker id="c" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b2252"/></marker>
+    <style>
+      .box  { fill:#eef6fb; stroke:#2f5f7a; stroke-width:2 }
+      .unit { fill:#ffffff; stroke:#2f5f7a; stroke-width:2 }
+      .mem  { fill:#fdf5e4; stroke:#9a7a2e; stroke-width:2 }
+      .ctl  { fill:#fbf0f2; stroke:#8b2252; stroke-width:2 }
+      .ctlu { fill:#ffffff; stroke:#8b2252; stroke-width:1.6 }
+      .ext  { fill:#ececec; stroke:#333; stroke-width:2 }
+      .row  { fill:#f8f8f8; stroke:#333; stroke-width:1.5 }
+      .w    { stroke:#222; stroke-width:2.6; fill:none }
+      .c    { stroke:#8b2252; stroke-width:2.6; fill:none }
+      .halo { stroke:#f2f2f2; stroke-width:12; fill:none }
+      .t    { fill:#222; text-anchor:middle; font-weight:700 }
+      .n    { fill:#222; text-anchor:middle }
+      .lab  { fill:#222; font-style:italic }
+      .clab { fill:#8b2252; font-style:italic }
+      .m    { text-anchor:middle }
+    </style>
+  </defs>
+
+  <rect width="1640" height="800" fill="#f2f2f2"/>
+
+  <text x="40" y="44" style="font-size:20px" fill="#2f6680">ECE 180DA/DW · Accelerator 2</text>
+  <text x="40" y="94" style="font-size:40px" font-weight="700" fill="#222">High-level architecture</text>
+
+  <!-- External memory -->
+  <rect class="ext" x="40" y="200" width="180" height="570"/>
+  <text x="130" y="232" class="t" style="font-size:17px">External memory</text>
+  <rect class="row" x="60" y="250" width="140" height="120"/>
+  <text x="130" y="305" class="t" style="font-size:22px">WGT</text>
+  <text x="130" y="331" class="n" style="font-size:16px">weights</text>
+  <rect class="row" x="60" y="385" width="140" height="120"/>
+  <text x="130" y="440" class="t" style="font-size:22px">IMG</text>
+  <text x="130" y="466" class="n" style="font-size:16px">image</text>
+  <rect class="row" x="60" y="520" width="140" height="120"/>
+  <text x="130" y="575" class="t" style="font-size:22px">PARAM</text>
+  <text x="130" y="601" class="n" style="font-size:16px">shift, bias</text>
+
+  <!-- Weight regs -->
+  <path class="w" d="M220,300 H330" marker-end="url(#a)"/>
+  <rect class="mem" x="330" y="270" width="190" height="60"/>
+  <text x="425" y="307" class="t" style="font-size:20px">Weight regs</text>
+  <path class="w" d="M520,300 H740 V350" marker-end="url(#a)"/>
+  <text x="630" y="290" class="lab m" style="font-size:17px">weights</text>
+
+  <!-- fc weights go straight to the FC unit -->
+  <path class="w" d="M280,300 V180 H1305 V500" marker-end="url(#a)"/>
+  <circle cx="280" cy="300" r="4.5" fill="#222"/>
+  <text x="800" y="170" class="lab m" style="font-size:17px">fc weights</text>
+
+  <!-- Input mux: IMG (conv1) or ACT_B (conv2) -->
+  <path class="w" d="M220,440 H540" marker-end="url(#a)"/>
+  <text x="380" y="430" class="lab m" style="font-size:17px">image</text>
+  <polygon class="box" points="540,400 570,415 570,495 540,510"/>
+  <text transform="translate(561,455) rotate(-90)" class="t" style="font-size:13px">MUX</text>
+  <path class="w" d="M570,455 H610" marker-end="url(#a)"/>
+
+  <!-- PE array -->
+  <rect class="box" x="610" y="350" width="260" height="240"/>
+  <text x="740" y="380" class="t" style="font-size:21px">PE array</text>
+  <rect class="unit" x="650" y="395" width="180" height="40"/>
+  <text x="740" y="421" class="n" style="font-size:18px">PE 0</text>
+  <rect class="unit" x="650" y="450" width="180" height="40"/>
+  <text x="740" y="476" class="n" style="font-size:18px">PE 1</text>
+  <rect class="unit" x="650" y="505" width="180" height="40"/>
+  <text x="740" y="531" class="n" style="font-size:18px">PE 2</text>
+  <text x="740" y="573" class="n" style="font-size:15px" fill="#2f5f7a">MAC + requantize</text>
+
+  <!-- On-chip activation buffers -->
+  <rect x="930" y="340" width="240" height="260" fill="#f8efd9" stroke="#9a7a2e" stroke-width="2"/>
+  <path class="w" d="M870,405 H960" marker-end="url(#a)"/>
+  <text x="1050" y="366" class="t" style="font-size:17px">On-chip buffers</text>
+  <rect class="mem" x="960" y="380" width="180" height="50"/>
+  <text x="1050" y="412" class="t" style="font-size:19px">ACT_A</text>
+  <path class="w" d="M1050,430 V455" marker-end="url(#a)"/>
+  <rect class="box" x="990" y="455" width="120" height="40"/>
+  <text x="1050" y="481" class="n" style="font-size:17px">Max-pool</text>
+  <path class="w" d="M1050,495 V520" marker-end="url(#a)"/>
+  <rect class="mem" x="960" y="520" width="180" height="50"/>
+  <text x="1050" y="552" class="t" style="font-size:19px">ACT_B</text>
+
+  <!-- ACT_B feeds conv2 back through the mux -->
+  <path class="w" d="M1050,570 V625 H515 V480 H540" marker-end="url(#a)"/>
+
+  <!-- FC + argmax and RES -->
+  <path class="w" d="M1140,545 H1230" marker-end="url(#a)"/>
+  <rect class="box" x="1230" y="500" width="150" height="90"/>
+  <text x="1305" y="551" class="t" style="font-size:19px">FC + argmax</text>
+  <path class="w" d="M1380,545 H1440" marker-end="url(#a)"/>
+  <rect class="mem" x="1440" y="500" width="140" height="90"/>
+  <text x="1510" y="552" class="t" style="font-size:21px">RES</text>
+  <path class="w" d="M1510,500 V420" marker-end="url(#a)"/>
+  <text x="1510" y="358" class="lab m" style="font-size:17px">Result: logits + argmax</text>
+  <text x="1510" y="381" class="lab m" style="font-size:17px">read out via debug port</text>
+  <text x="1510" y="403" class="m" style="font-size:15px" fill="#555">(acc_debug_if → testbench)</text>
+
+  <!-- PARAM to the controller -->
+  <path class="w" d="M220,590 H330 V680" marker-end="url(#a)"/>
+
+  <!-- Control -->
+  <rect class="ctl" x="300" y="680" width="950" height="90"/>
+  <rect class="ctlu" x="330" y="700" width="190" height="50"/>
+  <text x="425" y="732" class="n" style="font-size:18px">Addr gen</text>
+  <rect class="ctlu" x="600" y="700" width="220" height="50"/>
+  <text x="710" y="732" class="n" style="font-size:18px">Layer FSM</text>
+  <path class="c" d="M600,725 H520" marker-end="url(#c)"/>
+  <text x="1040" y="735" class="t" style="font-size:24px" fill="#7a1a45">Control</text>
+
+  <path class="c" d="M300,725 H220" marker-end="url(#c)"/>
+  <text x="260" y="715" class="clab m" style="font-size:17px">addr</text>
+
+  <path class="halo" d="M555,615 V635"/>
+  <path class="c" d="M640,700 V655 H555 V503" marker-end="url(#c)"/>
+  <text x="570" y="650" class="clab" style="font-size:18px">s</text>
+
+  <!-- CSR unit -->
+  <rect class="ext" x="1330" y="685" width="180" height="80"/>
+  <text x="1420" y="732" class="t" style="font-size:21px">CSR unit</text>
+  <path class="c" d="M1330,708 H1250" marker-end="url(#c)"/>
+  <text x="1290" y="700" class="clab m" style="font-size:16px">start</text>
+  <path class="c" d="M1250,745 H1330" marker-end="url(#c)"/>
+  <text x="1290" y="768" class="clab m" style="font-size:16px">done</text>
+</svg>
