@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2060 1160" width="2060" height="1160" font-family="'Source Serif 4','Source Serif Pro',Georgia,serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+    <marker id="c" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b2252"/></marker>
+    <marker id="d" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#666"/></marker>
+    <style>
+      .box  { fill:#eef6fb; stroke:#2f5f7a; stroke-width:2 }
+      .unit { fill:#ffffff; stroke:#2f5f7a; stroke-width:2 }
+      .mem  { fill:#fdf5e4; stroke:#9a7a2e; stroke-width:2 }
+      .ctl  { fill:#fbf0f2; stroke:#8b2252; stroke-width:2 }
+      .ctlu { fill:#ffffff; stroke:#8b2252; stroke-width:1.6 }
+      .ext  { fill:#ececec; stroke:#333; stroke-width:2 }
+      .reg  { fill:#f8f8f8; stroke:#333; stroke-width:1.5 }
+      .w    { stroke:#222; stroke-width:2.2; fill:none }
+      .c    { stroke:#8b2252; stroke-width:2.2; fill:none }
+      .d    { stroke:#666; stroke-width:1.8; fill:none; stroke-dasharray:7 5 }
+      .halo { stroke:#e8e8e8; stroke-width:10; fill:none }
+      .haloB{ stroke:#eef6fb; stroke-width:10; fill:none }
+      .t    { font-size:22px; fill:#222; text-anchor:middle; font-weight:700 }
+      .s    { font-size:15px; fill:#444; text-anchor:middle }
+      .lab  { font-size:16px; font-style:italic; fill:#222 }
+      .clab { font-size:15px; font-style:italic; fill:#8b2252 }
+      .dlab { font-size:15px; font-style:italic; fill:#555 }
+      .m    { text-anchor:middle }
+    </style>
+  </defs>
+
+  <rect width="2060" height="1160" fill="#f2f2f2"/>
+
+  <!-- ===== Title and legend ===== -->
+  <text x="44" y="52" font-size="22" fill="#2f6680">ECE 180DA/DW · Accelerator 2</text>
+  <text x="44" y="108" font-size="46" font-weight="700" fill="#222">High-level architecture</text>
+  <text x="44" y="146" font-size="18" fill="#555">MNIST CNN: conv1 → pool1 → conv2 → pool2 → fc + argmax. One engine active at a time; layer outputs never leave the accelerator.</text>
+
+  <path class="w" d="M1480,62 H1530" marker-end="url(#a)"/><text x="1542" y="68" class="lab" style="font-style:normal">data</text>
+  <path class="c" d="M1480,97 H1530" marker-end="url(#c)"/><text x="1542" y="103" class="lab" style="font-style:normal">control</text>
+  <path class="d" d="M1480,132 H1530" marker-end="url(#d)"/><text x="1542" y="138" class="lab" style="font-style:normal">debug read</text>
+  <rect class="box" x="1700" y="51" width="30" height="22"/><text x="1742" y="68" class="lab" style="font-style:normal">compute</text>
+  <rect class="mem" x="1700" y="86" width="30" height="22"/><text x="1742" y="103" class="lab" style="font-style:normal">on-chip memory</text>
+  <rect class="ext" x="1700" y="121" width="30" height="22"/><text x="1742" y="138" class="lab" style="font-style:normal">outside the accelerator</text>
+
+  <g transform="translate(0,-110)">
+  <!-- ===== Accelerator boundary ===== -->
+  <rect x="300" y="290" width="1600" height="950" fill="#e8e8e8"/>
+  <text x="1880" y="1228" font-size="22" font-style="italic" fill="#555" text-anchor="end">Accelerator</text>
+
+  <!-- ===== External memory (cnn_ext_mem) ===== -->
+  <rect class="ext" x="40" y="330" width="200" height="550"/>
+  <text x="140" y="362" class="t" style="font-size:20px">External memory</text>
+  <text x="140" y="386" class="s">cnn_ext_mem · read-only</text>
+  <rect class="reg" x="60" y="405" width="160" height="135"/>
+  <text x="140" y="450" class="t">IMG</text>
+  <text x="140" y="476" class="s">uint8 pixels</text>
+  <text x="140" y="500" class="s" style="font-size:14px">at 0x000 / 0x400</text>
+  <rect class="reg" x="60" y="565" width="160" height="135"/>
+  <text x="140" y="610" class="t">WGT</text>
+  <text x="140" y="636" class="s">int8 weights</text>
+  <text x="140" y="660" class="s">conv1 · conv2 · fc</text>
+  <rect class="reg" x="60" y="725" width="160" height="135"/>
+  <text x="140" y="770" class="t">PARAM</text>
+  <text x="140" y="796" class="s">int32 words</text>
+  <text x="140" y="820" class="s">shift · bias · MAGIC</text>
+
+  <!-- ===== CSR unit ===== -->
+  <rect class="ext" x="40" y="1090" width="200" height="120"/>
+  <text x="140" y="1145" class="t" style="font-size:24px">CSR unit</text>
+  <text x="140" y="1172" class="s">CSRs 0x7c0 – 0x7c2</text>
+
+  <!-- ===== Read data into the accelerator ===== -->
+  <path class="w" d="M240,470 H340" marker-end="url(#a)"/><text x="290" y="461" class="lab m">img</text>
+  <path class="w" d="M240,640 H340" marker-end="url(#a)"/><text x="290" y="631" class="lab m">wgt</text>
+  <path class="w" d="M240,795 H340" marker-end="url(#a)"/><text x="290" y="786" class="lab m">par</text>
+
+  <rect class="box" x="340" y="400" width="40" height="430"/>
+  <text transform="translate(366,615) rotate(-90)" font-size="17" fill="#222" text-anchor="middle">1-cycle read register</text>
+
+  <!-- ===== Controller ===== -->
+  <rect class="ctl" x="480" y="1080" width="1320" height="130"/>
+  <text x="1785" y="1110" font-size="24" font-weight="700" fill="#7a1a45" text-anchor="end">Controller</text>
+  <rect class="ctlu" x="500" y="1125" width="190" height="70"/>
+  <text x="595" y="1155" font-size="18" fill="#222" text-anchor="middle">PARAM regs</text>
+  <text x="595" y="1178" class="s" style="font-size:14px">shift1/2, biases</text>
+  <rect class="ctlu" x="705" y="1125" width="175" height="70"/>
+  <text x="792" y="1155" font-size="18" fill="#222" text-anchor="middle">Config check</text>
+  <text x="792" y="1178" class="s" style="font-size:13px">length, offset, MAGIC</text>
+  <rect class="ctlu" x="895" y="1125" width="545" height="70"/>
+  <text x="1167" y="1155" font-size="18" fill="#222" text-anchor="middle">Layer sequencer (FSM)</text>
+  <text x="1167" y="1178" class="s" style="font-size:13.5px">CHECK → PARAM → conv1 → pool1 → conv2 → pool2 → fc → MAGIC → DONE</text>
+  <rect class="ctlu" x="1455" y="1125" width="325" height="70"/>
+  <text x="1617" y="1155" font-size="18" fill="#222" text-anchor="middle">Addr gen + port mux</text>
+  <text x="1617" y="1178" class="s" style="font-size:14px">routes IMG / WGT / ACT / RES by layer</text>
+
+  <!-- CSR <-> controller -->
+  <path class="c" d="M240,1135 H480" marker-end="url(#c)"/>
+  <text x="360" y="1127" class="clab m" style="font-size:14px">activate · memory_location · length</text>
+  <path class="c" d="M480,1185 H240" marker-end="url(#c)"/>
+  <text x="360" y="1206" class="clab m">done · error</text>
+
+  <!-- Addresses to external memory -->
+  <path class="w" d="M480,1095 H290 V920 H140 V880" marker-end="url(#a)"/>
+  <text x="205" y="943" class="lab m" style="font-size:14px">img / wgt / par addr</text>
+
+  <!-- PARAM preload into controller -->
+  <path class="w" d="M380,795 H420 V1050 H595 V1125" marker-end="url(#a)"/>
+  <text x="432" y="1070" class="lab" style="font-size:14px">preload once per job</text>
+
+  <!-- ===== Conv engine ===== -->
+  <rect class="box" x="500" y="360" width="510" height="430"/>
+  <text x="755" y="392" class="t">Conv engine · conv1, conv2</text>
+
+  <!-- source mux: IMG for conv1, ACT_B for conv2 -->
+  <polygon class="box" points="430,390 460,405 460,475 430,490"/>
+  <path class="w" d="M380,470 H430" marker-end="url(#a)"/>
+  <path class="c" d="M445,532 V486" marker-end="url(#c)"/>
+  <text x="445" y="550" class="clab m" style="font-size:14px">layer</text>
+
+  <!-- weight register file -->
+  <rect class="mem" x="520" y="470" width="120" height="230"/>
+  <text x="580" y="558" font-size="19" font-weight="700" fill="#222" text-anchor="middle">Weight</text>
+  <text x="580" y="582" font-size="19" font-weight="700" fill="#222" text-anchor="middle">regs</text>
+  <text x="580" y="610" class="s">75 / 225 B</text>
+  <text x="580" y="632" class="s">int8</text>
+  <path class="w" d="M380,640 H520" marker-end="url(#a)"/>
+
+  <!-- activation broadcast bus -->
+  <path class="w" d="M460,440 H690 V658"/>
+  <text x="510" y="430" class="lab" style="font-size:15px">act (uint8), broadcast</text>
+  <path class="w" d="M690,458 H740" marker-end="url(#a)"/>
+  <path class="w" d="M690,558 H740" marker-end="url(#a)"/>
+  <path class="w" d="M690,658 H740" marker-end="url(#a)"/>
+  <circle cx="690" cy="458" r="4" fill="#222"/>
+  <circle cx="690" cy="558" r="4" fill="#222"/>
+
+  <!-- per-PE weights (cross the act bus without connecting) -->
+  <path class="haloB" d="M680,485 H700"/>
+  <path class="haloB" d="M680,585 H700"/>
+  <path class="w" d="M640,485 H740" marker-end="url(#a)"/>
+  <path class="w" d="M640,585 H740" marker-end="url(#a)"/>
+  <path class="w" d="M640,685 H740" marker-end="url(#a)"/>
+
+  <!-- PEs -->
+  <rect class="unit" x="740" y="440" width="120" height="60"/>
+  <text x="800" y="467" font-size="20" fill="#222" text-anchor="middle">PE 0</text>
+  <text x="800" y="489" class="s" style="font-size:13px">MAC · int32 acc</text>
+  <rect class="unit" x="740" y="540" width="120" height="60"/>
+  <text x="800" y="567" font-size="20" fill="#222" text-anchor="middle">PE 1</text>
+  <text x="800" y="589" class="s" style="font-size:13px">MAC · int32 acc</text>
+  <rect class="unit" x="740" y="640" width="120" height="60"/>
+  <text x="800" y="667" font-size="20" fill="#222" text-anchor="middle">PE 2</text>
+  <text x="800" y="689" class="s" style="font-size:13px">MAC · int32 acc</text>
+  <text x="755" y="752" font-size="16" fill="#2f5f7a" text-anchor="middle">N = 3 PEs, one per output channel</text>
+
+  <!-- requantize -->
+  <path class="w" d="M860,470 H900" marker-end="url(#a)"/>
+  <path class="w" d="M860,570 H900" marker-end="url(#a)"/>
+  <path class="w" d="M860,670 H900" marker-end="url(#a)"/>
+  <rect class="unit" x="900" y="440" width="60" height="260"/>
+  <text transform="translate(927,570) rotate(-90)" font-size="18" font-weight="700" fill="#222" text-anchor="middle">Requantize</text>
+  <text transform="translate(949,570) rotate(-90)" font-size="14" fill="#444" text-anchor="middle">+bias, ≫shift, clamp 0–255</text>
+
+  <!-- ===== Layer buffers and pool ===== -->
+  <path class="w" d="M960,570 H1060" marker-end="url(#a)"/>
+
+  <rect class="mem" x="1060" y="510" width="140" height="120"/>
+  <text x="1130" y="555" class="t" style="font-size:21px">ACT_A</text>
+  <text x="1130" y="580" class="s">2048 B</text>
+  <text x="1130" y="604" class="s">a1, then a2</text>
+
+  <path class="w" d="M1200,570 H1250" marker-end="url(#a)"/>
+  <rect class="box" x="1250" y="510" width="120" height="120"/>
+  <text x="1310" y="562" class="t" style="font-size:20px">Max-pool</text>
+  <text x="1310" y="588" class="s">2×2, stride 2</text>
+
+  <path class="w" d="M1370,570 H1420" marker-end="url(#a)"/>
+  <rect class="mem" x="1420" y="510" width="140" height="120"/>
+  <text x="1490" y="555" class="t" style="font-size:21px">ACT_B</text>
+  <text x="1490" y="580" class="s">512 B</text>
+  <text x="1490" y="604" class="s">p1, then p2</text>
+
+  <!-- loop-back: p1 feeds conv2 -->
+  <path class="w" d="M1490,510 V345 H405 V410 H430" marker-end="url(#a)"/>
+  <text x="950" y="336" class="lab m">p1 → conv2 input (conv1 reads IMG instead)</text>
+
+  <!-- ===== FC + argmax and RES ===== -->
+  <path class="w" d="M1490,630 V880" marker-end="url(#a)"/>
+  <text x="1502" y="760" class="lab">p2</text>
+
+  <!-- FC weights straight from WGT -->
+  <path class="w" d="M470,640 V1030 H1460 V1000" marker-end="url(#a)"/>
+  <circle cx="470" cy="640" r="4" fill="#222"/>
+  <text x="1150" y="1022" class="lab m" style="font-size:15px">fc weights</text>
+
+  <rect class="box" x="1420" y="880" width="140" height="120"/>
+  <text x="1490" y="925" class="t" style="font-size:17px">FC + argmax</text>
+  <text x="1490" y="950" class="s">int32 logits</text>
+  <text x="1490" y="972" class="s" style="font-size:14px">no shift, no ReLU</text>
+
+  <path class="w" d="M1560,940 H1640" marker-end="url(#a)"/>
+  <rect class="mem" x="1640" y="880" width="140" height="120"/>
+  <text x="1710" y="920" class="t" style="font-size:21px">RES</text>
+  <text x="1710" y="945" class="s">16 × 32-bit</text>
+  <text x="1710" y="968" class="s" style="font-size:14px">logits · argmax</text>
+
+  <!-- ===== Control into engines (cross the fc-weight bus) ===== -->
+  <path class="halo" d="M760,1020 V1040"/>
+  <path class="c" d="M760,1080 V790" marker-end="url(#c)"/>
+  <text x="772" y="880" class="clab">layer, start / done</text>
+  <text x="772" y="902" class="clab">bias, shift</text>
+  <path class="halo" d="M1310,1020 V1040"/>
+  <path class="c" d="M1310,1080 V630" marker-end="url(#c)"/>
+  <text x="1322" y="800" class="clab">start / done</text>
+  <path class="c" d="M1530,1080 V1000" marker-end="url(#c)"/>
+  <text x="1540" y="1050" class="clab" style="font-size:14px">start / done</text>
+  <path class="c" d="M1710,1080 V1000" marker-end="url(#c)"/>
+  <text x="1720" y="1050" class="clab" style="font-size:14px">write MAGIC</text>
+
+  <!-- ===== Debug read port ===== -->
+  <path class="halo" d="M1480,430 H1500"/>
+  <path class="d" d="M1130,510 V430 H1815 V880 H1830" marker-end="url(#d)"/>
+  <path class="d" d="M1560,570 H1795 V910 H1830" marker-end="url(#d)"/>
+  <path class="w" d="M1780,960 H1830" marker-end="url(#a)"/>
+  <polygon class="box" points="1830,860 1860,878 1860,1002 1830,1020"/>
+  <path class="w" d="M1860,940 H1990" marker-end="url(#a)"/>
+  <text x="1950" y="928" class="lab m" style="font-size:15px">acc_debug_if</text>
+  <text x="1950" y="962" class="dlab m" style="font-size:14px">to testbench</text>
+  </g>
+</svg>
