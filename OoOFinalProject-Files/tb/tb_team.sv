@@ -56,9 +56,44 @@ module tb_team #(
     logic [7:0]  gold_p2 [P2_ELEMS];
     logic [31:0] gold_res [RES_WORDS];
 
+    // Check each layer's writes before the following layer reuses its buffer.
+    // Also verify address order/count, catching missing or duplicate outputs.
+    int stage_errors [4];
+    int stage_writes [4];
+    always @(posedge clk) begin : monitor_datapath
+        int n, addr, count;
+        logic [7:0] got, exp;
+        if (rst_n) begin
+            n = -1; addr = 0; got = 0; exp = 0; count = 0;
+            if (dut.conv_dst_we) begin
+                n = dut.layer == acc_internal_pkg::L_CONV1 ? 0 : 2;
+                addr = int'(dut.conv_dst_addr);
+                got = dut.conv_dst_wdata;
+                count = n == 0 ? A1_ELEMS : A2_ELEMS;
+                if (addr < count) exp = n == 0 ? gold_a1[addr] : gold_a2[addr];
+            end else if (dut.pool_dst_we) begin
+                n = dut.layer == acc_internal_pkg::L_POOL1 ? 1 : 3;
+                addr = int'(dut.pool_dst_addr);
+                got = dut.pool_dst_wdata;
+                count = n == 1 ? P1_ELEMS : P2_ELEMS;
+                if (addr < count) exp = n == 1 ? gold_p1[addr] : gold_p2[addr];
+            end
+            if (n >= 0) begin
+                if (addr >= count || addr != stage_writes[n] || got !== exp) begin
+                    if (stage_errors[n] < 4)
+                        $display("      layer %0d write mismatch addr=%0d got=%0d expected=%0d",
+                                 n+1, addr, got, exp);
+                    stage_errors[n]++;
+                end
+                stage_writes[n]++;
+            end
+        end
+    end
+
     task automatic load_vector(input string name);
         string d;
         begin
+            for (int i=0; i<4; i++) begin stage_errors[i]=0; stage_writes[i]=0; end
             d = {vec_root, "/", name};
             xmem.load(d);
             $readmemh({d, "/golden_a1.hex"}, gold_a1);
@@ -115,8 +150,8 @@ module tb_team #(
 
     task automatic check_layer(input int n, output int errs);
         case (n)
-            1: cmp_mem(MEM_ACT_A, A1_ELEMS, 1, errs);
-            2: cmp_mem(MEM_ACT_B, P1_ELEMS, 2, errs);
+            1: errs = stage_errors[0] + (stage_writes[0] == A1_ELEMS ? 0 : 1);
+            2: errs = stage_errors[1] + (stage_writes[1] == P1_ELEMS ? 0 : 1);
             3: cmp_mem(MEM_ACT_A, A2_ELEMS, 3, errs);
             default: cmp_mem(MEM_ACT_B, P2_ELEMS, 4, errs);
         endcase
@@ -151,6 +186,7 @@ module tb_team #(
             cycles = 0;
             guard  = 0;
             @(negedge clk);
+            for (int i=0; i<4; i++) begin stage_errors[i]=0; stage_writes[i]=0; end
             csr_if.memory_location = loc;
             csr_if.length          = len;
             csr_if.activate        = 1'b1;
@@ -162,6 +198,15 @@ module tb_team #(
                 herrs++;
             end
             err = csr_if.error;
+            if (!err && csr_if.done) begin
+                for (int i=0; i<4; i++) herrs += stage_errors[i];
+                if (stage_writes[0] != A1_ELEMS || stage_writes[1] != P1_ELEMS ||
+                    stage_writes[2] != A2_ELEMS || stage_writes[3] != P2_ELEMS) begin
+                    $display("      incomplete layer write counts: %0d %0d %0d %0d",
+                             stage_writes[0],stage_writes[1],stage_writes[2],stage_writes[3]);
+                    herrs++;
+                end
+            end
 
             // done is a level that holds, and the job does not restart, while
             // activate stays high
@@ -278,10 +323,30 @@ module tb_team #(
         else              check_res(e2);
         report("recovers from mid-job reset", e + herrs + e2);
 
+        // Reset with a pooling window in flight, then verify a fresh job.
+        load_vector("v2_random");
+        @(negedge clk);
+        csr_if.memory_location = 0;
+        csr_if.length = IMG_PIXELS;
+        csr_if.activate = 1;
+        begin
+            int guard;
+            guard = 0;
+            while (!dut.pool_dst_we && guard < 100_000) begin
+                @(negedge clk); guard++;
+            end
+            if (!dut.pool_dst_we) $fatal(1,"Pooling did not start before reset test");
+        end
+        do_reset();
+        e = (csr_if.done || csr_if.error || dut_busy || dut.conv_dst_we || dut.pool_dst_we) ? 1 : 0;
+        run_job(0, IMG_PIXELS, cyc, err, herrs);
+        check_layer(4, e2);
+        report("recovers from reset during pooling", e + herrs + e2 + (err ? 1 : 0));
+
         $display("");
         if (total_errors == 0) $display("TB_TEAM PASS (%0d checks)", total_checks);
-        else $display("TB_TEAM FAIL (%0d errors across %0d checks)",
-                      total_errors, total_checks);
+        else $fatal(1, "TB_TEAM FAIL (%0d errors across %0d checks)",
+                    total_errors, total_checks);
         $finish;
     end
 

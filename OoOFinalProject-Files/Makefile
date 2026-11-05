@@ -32,7 +32,21 @@ TB   := $(COMMON)/cnn_ext_mem.sv tb/tb_team.sv
 VFLAGS := --binary --timing -Wall -Wno-fatal -Wno-DECLFILENAME -Wno-PINCONNECTEMPTY \
           -Wno-UNUSEDPARAM -Wno-IMPORTSTAR -Wno-VARHIDDEN
 
-.PHONY: model sim sim-sync lint clean
+.PHONY: model sim sim-sync sim-pe lint lint-pe clean
+
+PE_RTL := rtl/pe/mac_unit.sv rtl/pe/accumulator.sv rtl/pe/pe_top.sv
+
+lint-pe:
+	verilator --lint-only -Wall --top-module pe_top $(PE_RTL)
+
+sim-pe:
+	@mkdir -p $(BUILD)/pe
+	verilator $(VFLAGS) --top-module tb_pe --Mdir $(BUILD)/pe \
+	    $(PE_RTL) tb/tb_pe.sv -o Vtb
+	@for dir in $(VECTORS)/*/; do \
+	    offset=$$(python3 -c 'import sys; sys.path.insert(0,"model"); from cnn_ref import vector_offset; print(vector_offset(sys.argv[1]))' "$$dir"); \
+	    $(BUILD)/pe/Vtb +vector="$$dir" +offset="$$offset" || exit $$?; \
+	done
 
 $(COMMON)/accelerator_pkg.sv:
 	@echo "Course files not found at $(COURSE). Run make from OoOFinalProject-Files/." && exit 1
@@ -43,18 +57,18 @@ model: $(COMMON)/accelerator_pkg.sv
 sim: $(COMMON)/accelerator_pkg.sv
 	@mkdir -p $(BUILD)/async
 	verilator $(VFLAGS) --top-module tb_team -GSYNC=0 --Mdir $(BUILD)/async \
-	    $(PKGS) $(IFS) $(RTL) $(TB) -o Vtb
+	    $(PKGS) $(IFS) $(PE_RTL) $(RTL) $(TB) -o Vtb
 	$(BUILD)/async/Vtb +vectors=$(VECTORS) +bringup=$(BRINGUP)
 
 sim-sync: $(COMMON)/accelerator_pkg.sv
 	@mkdir -p $(BUILD)/sync
 	verilator $(VFLAGS) --top-module tb_team -GSYNC=1 --Mdir $(BUILD)/sync \
-	    $(PKGS) $(IFS) $(RTL) $(TB) -o Vtb
+	    $(PKGS) $(IFS) $(PE_RTL) $(RTL) $(TB) -o Vtb
 	$(BUILD)/sync/Vtb +vectors=$(VECTORS) +bringup=$(BRINGUP)
 
 lint: $(COMMON)/accelerator_pkg.sv
 	verilator --lint-only -Wall -Wno-fatal -Wno-DECLFILENAME -Wno-IMPORTSTAR \
-	    -Wno-UNUSEDPARAM --top-module accelerator_top $(PKGS) $(IFS) $(RTL)
+	    -Wno-UNUSEDPARAM --top-module accelerator_top $(PKGS) $(IFS) $(PE_RTL) $(RTL)
 
 clean:
 	rm -rf $(BUILD)

@@ -1,19 +1,5 @@
-// 2x2 stride-2 max-pool engine, shared by pool1 and pool2.  *** STUB: TODO ***
-//
-//   y[(h*OUT_HW + w)*3 + c] = max over a,b in {0,1} of
-//                             x[((2h+a)*IN_HW + (2w+b))*3 + c]
-//
-//   pool1: IN_HW = 24 (ACT_A -> ACT_B, 432 outputs)
-//   pool2: IN_HW =  8 (ACT_A -> ACT_B,  48 outputs)
-//   OUT_HW = IN_HW / 2. Values are uint8, so max is an unsigned compare.
-//
-// Simplest schedule: 4 reads then 1 write per output (one read port on
-// ACT_A, one write port on ACT_B, which can overlap). The reads have one
-// cycle of latency: data for the address driven in cycle t arrives in t+1.
-//
-// Handshake: start_i is a one-cycle pulse; pulse done_o for one cycle after
-// the last output byte is written.
-
+// Unsigned 2x2 stride-2 max pooling, ACT_A -> ACT_B, HWC layout.
+// Four pipelined reads and one write per output. Config is stable until done.
 module acc_pool
     import accelerator_cnn_pkg::*;
     import acc_internal_pkg::*;
@@ -36,20 +22,61 @@ module acc_pool
     output act_t                   dst_wdata_o
 );
 
-    // TODO: replace this stub. It finishes immediately and writes nothing.
+    typedef enum logic [1:0] {IDLE, READ, WRITE, FINISH} state_t;
+    state_t state;
+    int unsigned h, w, channel, issue_sample, out_hw;
+    logic pending;
+    logic [1:0] return_sample;
+    act_t maximum;
+    assign out_hw = int'(cfg_in_hw_i) / 2;
+    // Sample order: top left, top right, bottom left, bottom right.
+    assign src_addr_o = BYTE_ADDR_W'(
+        ((2*h + ((issue_sample < 4 ? issue_sample : 0)/2))*int'(cfg_in_hw_i) +
+          2*w + ((issue_sample < 4 ? issue_sample : 0)%2))*C1_OC + channel);
+    assign dst_addr_o = BYTE_ADDR_W'((h*out_hw+w)*C1_OC + channel);
+    assign dst_we_o = rst_ni && state == WRITE;
+    assign dst_wdata_o = maximum;
+    assign done_o = state == FINISH;
+
     always_ff @(posedge clk_i or negedge rst_ni) begin
-        if (!rst_ni) done_o <= 1'b0;
-        else         done_o <= start_i;
+        if (!rst_ni) begin
+            state <= IDLE;
+            h <= 0; w <= 0; channel <= 0; issue_sample <= 0;
+            pending <= 0; return_sample <= 0; maximum <= 0;
+        end else begin
+            case (state)
+                IDLE: if (start_i) begin
+                    h <= 0; w <= 0; channel <= 0; issue_sample <= 0;
+                    pending <= 0; maximum <= 0;
+                    state <= READ;
+                end
+                READ: begin
+                    pending <= issue_sample < 4;
+                    if (issue_sample < 4) begin
+                        return_sample <= 2'(issue_sample);
+                        issue_sample <= issue_sample + 1;
+                    end
+                    if (pending) begin
+                        if (src_rdata_i > maximum) maximum <= src_rdata_i;
+                        if (return_sample == 3) state <= WRITE;
+                    end
+                end
+                WRITE: begin
+                    if (h == out_hw-1 && w == out_hw-1 && channel == C1_OC-1)
+                        state <= FINISH;
+                    else begin
+                        if (channel == C1_OC-1) begin
+                            channel <= 0;
+                            if (w == out_hw-1) begin w <= 0; h <= h+1; end
+                            else w <= w+1;
+                        end else channel <= channel+1;
+                        maximum <= 0; pending <= 0; issue_sample <= 0;
+                        state <= READ;
+                    end
+                end
+                FINISH: state <= IDLE;
+                default: state <= IDLE;
+            endcase
+        end
     end
-
-    assign src_addr_o  = '0;
-    assign dst_we_o    = 1'b0;
-    assign dst_addr_o  = '0;
-    assign dst_wdata_o = '0;
-
-    // verilator lint_off UNUSEDSIGNAL
-    logic unused;
-    assign unused = ^{cfg_in_hw_i, src_rdata_i};
-    // verilator lint_on UNUSEDSIGNAL
-
 endmodule
