@@ -54,8 +54,9 @@
   <rect class="reg" x="880" y="385" width="160" height="70"/>
   <path class="clk" d="M886,455 l8,-10 l8,10"/>
   <text x="960" y="425" class="n">acc_q</text>
-  <text x="960" y="480" class="ann" text-anchor="middle">only if valid_i</text>
-  <text x="960" y="500" class="ann" text-anchor="middle">cleared by clear_i, rst_ni</text>
+  <text x="905" y="482" class="ann" text-anchor="middle">only if valid_i</text>
+  <path class="w" d="M110,665 H1000 V457" marker-end="url(#a)"/>
+  <text x="110" y="657" class="p">valid_i</text>
 
   <!-- running sum feeds back to the bias select -->
   <path class="w" d="M920,385 V320 H420 V368" marker-end="url(#a)"/>
@@ -69,8 +70,8 @@
   <path class="w" d="M1040,420 H1113" marker-end="url(#a)"/>
   <use href="#cloud" xlink:href="#cloud" x="1110" y="360" width="190" height="120"/>
   <text x="1205" y="425" class="n">Requant</text>
-  <path class="w" d="M110,680 H1205 V472" marker-end="url(#a)"/>
-  <text x="110" y="672" class="p">shift_i</text>
+  <path class="w" d="M110,700 H1205 V472" marker-end="url(#a)"/>
+  <text x="110" y="692" class="p">shift_i</text>
 
   <path class="w" d="M1300,420 H1480" marker-end="url(#a)"/>
   <text x="1360" y="392" class="p">requant_o</text>
