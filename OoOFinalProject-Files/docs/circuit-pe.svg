@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1520 780" width="1520" height="780" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20,0 H0 V20" fill="none" stroke="#ececec" stroke-width="1"/></pattern>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#222"/></marker>
+    <symbol id="cloud" viewBox="0 0 100 70" preserveAspectRatio="none"><path d="M24,62 C9,62 3,50 12,41 C3,31 13,15 28,21 C31,7 54,3 61,15 C70,4 92,10 88,27 C100,32 98,55 83,56 C82,68 62,71 53,63 C45,71 27,70 24,62 Z" fill="#ffffff" stroke="#333" stroke-width="1.6" vector-effect="non-scaling-stroke"/></symbol>
+    <style>
+      .mod  { fill:#fff2cc; stroke:#d6b656; stroke-width:2 }
+      .reg  { fill:#dae8fc; stroke:#6c8ebf; stroke-width:2 }
+      .clk  { fill:none; stroke:#6c8ebf; stroke-width:1.6 }
+      .w    { stroke:#222; stroke-width:1.8; fill:none }
+      .n    { fill:#222; text-anchor:middle; font-size:16px }
+      .p    { fill:#222; font-size:15px }
+      .ann  { fill:#444; font-style:italic; font-size:14px }
+    </style>
+  </defs>
+
+  <rect width="1520" height="780" fill="#ffffff"/>
+  <rect width="1520" height="780" fill="url(#grid)"/>
+
+  <text x="40" y="56" style="font-size:30px" font-weight="700" fill="#222">Processing element · circuit level</text>
+  <text x="40" y="88" style="font-size:17px" fill="#555">rtl/pe/pe_top.sv: one output channel; acc_conv instantiates three</text>
+
+  <use href="#cloud" xlink:href="#cloud" x="1110" y="28" width="62" height="42"/>
+  <text x="1182" y="55" class="p">combinational</text>
+  <rect class="reg" x="1310" y="32" width="54" height="34"/>
+  <path class="clk" d="M1316,66 l7,-9 l7,9"/>
+  <text x="1374" y="55" class="p">register</text>
+
+  <rect class="mod" x="260" y="180" width="1080" height="540"/>
+  <text x="800" y="212" class="n" style="font-size:20px" font-weight="700">pe_top</text>
+
+  <!-- bias select: bias_i on the first MAC, the running sum otherwise -->
+  <path class="w" d="M110,420 H333" marker-end="url(#a)"/>
+  <text x="110" y="412" class="p">bias_i</text>
+  <path class="w" d="M110,540 H420 V472" marker-end="url(#a)"/>
+  <text x="110" y="532" class="p">first_mac_i</text>
+
+  <use href="#cloud" xlink:href="#cloud" x="330" y="360" width="180" height="120"/>
+  <text x="420" y="425" class="n">Bias select</text>
+
+  <!-- multiply-accumulate -->
+  <path class="w" d="M510,420 H593" marker-end="url(#a)"/>
+  <text x="551" y="410" class="ann" text-anchor="middle">mac_base</text>
+  <path class="w" d="M110,590 H660 V484" marker-end="url(#a)"/>
+  <text x="110" y="582" class="p">act_i (broadcast byte)</text>
+  <path class="w" d="M110,630 H730 V481" marker-end="url(#a)"/>
+  <text x="110" y="622" class="p">wgt_i (from weight bank)</text>
+
+  <use href="#cloud" xlink:href="#cloud" x="590" y="350" width="200" height="140"/>
+  <text x="690" y="425" class="n">MAC</text>
+
+  <path class="w" d="M790,420 H880" marker-end="url(#a)"/>
+  <text x="835" y="410" class="ann" text-anchor="middle">acc_d</text>
+  <rect class="reg" x="880" y="385" width="160" height="70"/>
+  <path class="clk" d="M886,455 l8,-10 l8,10"/>
+  <text x="960" y="425" class="n">acc_q</text>
+  <text x="960" y="480" class="ann" text-anchor="middle">only if valid_i</text>
+  <text x="960" y="500" class="ann" text-anchor="middle">cleared by clear_i, rst_ni</text>
+
+  <!-- running sum feeds back to the bias select -->
+  <path class="w" d="M920,385 V320 H420 V368" marker-end="url(#a)"/>
+  <text x="670" y="312" class="ann" text-anchor="middle">implicit reading</text>
+
+  <!-- outputs: raw sum and requantized byte -->
+  <circle cx="1075" cy="420" r="4" fill="#222"/>
+  <path class="w" d="M1075,420 V280 H1480" marker-end="url(#a)"/>
+  <text x="1360" y="272" class="p">sum_o</text>
+
+  <path class="w" d="M1040,420 H1113" marker-end="url(#a)"/>
+  <use href="#cloud" xlink:href="#cloud" x="1110" y="360" width="190" height="120"/>
+  <text x="1205" y="425" class="n">Requant</text>
+  <path class="w" d="M110,680 H1205 V472" marker-end="url(#a)"/>
+  <text x="110" y="672" class="p">shift_i</text>
+
+  <path class="w" d="M1300,420 H1480" marker-end="url(#a)"/>
+  <text x="1360" y="392" class="p">requant_o</text>
+  <text x="1360" y="412" class="p">→ ACT_A write</text>
+</svg>
