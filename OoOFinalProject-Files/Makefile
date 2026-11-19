@@ -25,7 +25,7 @@ PKGS := $(COMMON)/accelerator_pkg.sv \
 IFS  := $(COMMON)/csr_accelerator_if.sv \
         $(call pick,cnn_mem_if.sv) \
         $(call pick,acc_debug_if.sv)
-RTL  := rtl/acc_ram.sv rtl/acc_controller.sv rtl/acc_conv.sv rtl/acc_pool.sv \
+RTL  := rtl/acc_ram.sv rtl/acc_controller.sv rtl/acc_conv.sv rtl/acc_pool.sv rtl/acc_pool_engine.sv \
         rtl/acc_fc.sv rtl/accelerator_top.sv
 TB   := $(COMMON)/cnn_ext_mem.sv tb/tb_team.sv
 

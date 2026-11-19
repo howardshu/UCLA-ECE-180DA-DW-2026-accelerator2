@@ -178,7 +178,7 @@ module accelerator_top
         .dst_wdata_o    (conv_dst_wdata)
     );
 
-    acc_pool u_pool (
+    acc_pool_engine u_pool (
         .clk_i       (clk_i),
         .rst_ni      (rst_ni),
         .start_i     (pool_start),
