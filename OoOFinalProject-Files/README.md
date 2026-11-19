@@ -12,7 +12,7 @@ Requires Verilator 5 (`brew install verilator`) and Python 3. Run from `OoOFinal
 make model           # reference model vs. golden vectors (all should be ok)
 make sim             # our testbench, async external memory
 make sim-sync        # same, cnn_ext_mem REGISTERED_READ=1
-make sim BRINGUP=4   # verify conv1/pool1/conv2/pool2; FC remains a stub
+make sim BRINGUP=4   # final readback checks pool2 (ACT_B) instead of RES; all layer writes still checked
 make sim-pe          # single-PE arithmetic and control checks
 make lint-pe         # strict standalone PE lint
 ```
@@ -24,8 +24,9 @@ make lint-pe         # strict standalone PE lint
 | `rtl/accelerator_top.sv` | Top level: ports required by the course testbench, internal memories, port routing |
 | `rtl/acc_controller.sv` | CSR handshake, config checks, PARAM preload, layer sequencing |
 | `rtl/acc_conv.sv` | Three output-channel PEs, weight preload and convolution address generation |
-| `rtl/acc_pool.sv` | Unsigned 2x2 stride-2 max pooling |
-| `rtl/acc_fc.sv` | Fully connected layer (**stub**) |
+| `rtl/acc_pool_engine.sv` | Standalone unsigned 2x2 stride-2 max-pooling engine (3-PE prototype) |
+| `rtl/acc_pool.sv` | One fused max-pool lane for the 75-PE design (not yet instantiated) |
+| `rtl/acc_fc.sv` | Fully connected layer and signed argmax (one PE, about 485 cycles) |
 | `rtl/pe/` | Bias-initialized MAC PE with shift, ReLU and saturation in one clamp |
 | `rtl/acc_ram.sv` | Block-RAM-style memory with a debug read port |
 | `rtl/acc_internal_pkg.sv` | Internal types and the requant function |

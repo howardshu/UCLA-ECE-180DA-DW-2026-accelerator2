@@ -78,11 +78,20 @@ Key decisions:
 | `rtl/acc_controller.sv` | Done: handshake, config/PARAM checks, PARAM preload, sequencing, MAGIC. |
 | `rtl/acc_ram.sv` | Done. |
 | `rtl/acc_conv.sv` | Implemented: three PEs, per-layer weight preload, pipelined input reads, serialized output writes. |
-| `rtl/acc_pool.sv` | Implemented: unsigned 2x2 stride-2 max pooling. |
-| `rtl/acc_fc.sv` | **Stub.** |
+| `rtl/acc_pool_engine.sv` | Implemented: standalone unsigned 2x2 stride-2 max pooling (the 3-PE prototype's pooling pass). |
+| `rtl/acc_pool.sv` | One fused max-pool lane for the 75-PE design; not yet instantiated. |
+| `rtl/acc_fc.sv` | Done: one PE, one MAC per cycle, signed argmax (first maximum wins, an unconfirmed assumption). |
 | `tb/tb_team.sv` | Done: all vectors, layer checks, handshake, repeat, bad length/offset, mid-job reset, both memory modes. |
 
-Use `make sim BRINGUP=4` and `make sim-sync BRINGUP=4` to check all four convolution/pooling stages at their writes, plus controller behavior. FC is still a stub, so full result checks (`BRINGUP=0`) are expected to fail. The datapath uses separate convolution and pooling passes; they are not fused.
+`make sim` and `make sim-sync` run the full result checks (`TB_TEAM PASS (13 checks)` in each mode). Every job also checks all four convolution/pooling write streams. `BRINGUP=N` only swaps the final RES readback for a debug-port readback of layer N. The datapath uses separate convolution and pooling passes; they are not fused.
+
+Measured full-inference baseline (3-PE prototype, controller busy cycles):
+
+| Setup | Conv1 | Pool1 | Conv2 | Pool2 | FC + argmax | Completion marker | Busy total | Testbench cycles |
+|---|---|---|---|---|---|---|---|---|
+| 42 | 16,782 | 2,594 | 5,284 | 290 | 485 | 1 | 25,478 | **25,480** |
+
+Conv1 and Conv2 include their 75- and 225-byte weight preloads. The completion marker is the controller's `S_MAGIC` cycle. The 24,997-cycle figure quoted earlier was measured with the FC stub; 22,113 equals that total minus both pooling phases.
 
 ## 5. Open questions (post on Campuswire)
 
