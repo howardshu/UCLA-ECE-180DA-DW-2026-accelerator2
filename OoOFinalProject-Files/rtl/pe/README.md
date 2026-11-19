@@ -58,17 +58,19 @@ activation, and supplies separate weights and biases. It preloads 75/225 bytes
 of weights into three banks, pipelines operand addresses for the one-cycle
 read latency, and serializes the three result bytes onto ACT_A.
 
-`rtl/acc_pool.sv` implements unsigned 2x2 stride-2 max pooling from ACT_A to
-ACT_B with one comparator and a running maximum register. It reads the four
-samples of each output sequentially. Convolution and pooling remain separate
-passes through the existing controller/memory interfaces (not fused).
+`rtl/acc_pool_engine.sv` implements unsigned 2x2 stride-2 max pooling from
+ACT_A to ACT_B with one comparator and a running maximum register. It reads the
+four samples of each output sequentially. Convolution and pooling remain
+separate passes through the existing controller/memory interfaces (not fused).
+`rtl/acc_pool.sv` holds the fused pooling lane for the 75-PE design.
 
-Run `make sim BRINGUP=4` and `make sim-sync BRINGUP=4` for the complete
-conv1 -> pool1 -> conv2 -> pool2 datapath in both external memory modes.
-The testbench checks every output write, address and count at all four layers,
-including layers overwritten later, across all six course vectors. It also
-checks repeat jobs, invalid configuration and recovery from resets during
-convolution and pooling. Nominal jobs currently take 24,997 testbench cycles,
-including controller overhead and the FC stub; this is not full inference
-performance. The FC engine remains a stub, so full result checking (`BRINGUP=0`)
-is not expected to pass yet.
+`rtl/acc_fc.sv` reuses one `pe_top` for the fully connected layer: `first_mac_i`
+loads each neuron's bias, `sum_o` is the int32 logit, and `requant_o` is unused.
+
+Run `make sim` and `make sim-sync` for full inference in both external memory
+modes. The testbench checks every output write, address and count at all four
+layers, including layers overwritten later, across all six course vectors, plus
+the final RES words. It also checks repeat jobs, invalid configuration and
+recovery from resets during convolution and pooling. Nominal jobs take
+**25,480 testbench cycles** for full inference. The earlier 24,997-cycle figure
+was measured with the FC stub and is kept only as a historical reference.

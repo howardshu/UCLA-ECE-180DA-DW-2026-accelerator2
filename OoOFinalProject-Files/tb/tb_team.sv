@@ -7,9 +7,10 @@
 // vector directories.
 //
 //   +vectors=<dir>   course tb/vectors directory (required)
-//   +bringup=N       check only layer N of every vector: 1=a1 (ACT_A),
-//                    2=p1 (ACT_B), 3=a2 (ACT_A), 4=p2 (ACT_B). Use while
-//                    later layers are still stubs. Default: full checks.
+//   +bringup=N       replace the final RES readback with a debug readback of
+//                    layer N: 1=a1 (ACT_A), 2=p1 (ACT_B), 3=a2 (ACT_A),
+//                    4=p2 (ACT_B). All four layer write streams are still
+//                    checked during every job. Default: full checks.
 //   -GSYNC=1         run cnn_ext_mem with REGISTERED_READ=1
 // ===========================================================================
 module tb_team #(
